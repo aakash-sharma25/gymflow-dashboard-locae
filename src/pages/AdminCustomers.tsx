@@ -12,12 +12,19 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getAllCustomers, exportCustomersAsCSV, subscribeToCustomers } from '@/utils/customerStorage';
-import { Customer, MEMBERSHIP_TYPES } from '@/types/customer';
-import { Search, Download, RefreshCw, Users, UserPlus } from 'lucide-react';
+import { getAllCustomers, exportCustomersAsCSV, subscribeToCustomers, updateCustomerStatus, convertCustomerToMember } from '@/utils/customerStorage';
+import { Customer, MEMBERSHIP_TYPES, CustomerStatus } from '@/types/customer';
+import { Search, Download, RefreshCw, Users, UserPlus, CheckCircle, Clock, UserCheck, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/shared/StatCard';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const AdminCustomers = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -96,6 +103,41 @@ const AdminCustomers = () => {
         }
     };
 
+    const getStatusBadgeColor = (status: CustomerStatus) => {
+        switch (status) {
+            case 'pending':
+                return 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20';
+            case 'approved':
+                return 'bg-green-500/10 text-green-500 hover:bg-green-500/20';
+            case 'member':
+                return 'bg-primary/10 text-primary hover:bg-primary/20';
+            default:
+                return 'bg-muted';
+        }
+    };
+
+    const handleStatusChange = async (customerId: string, newStatus: CustomerStatus) => {
+        try {
+            await updateCustomerStatus(customerId, newStatus);
+            toast.success(`Status updated to ${newStatus}`);
+            loadCustomers();
+        } catch (error) {
+            toast.error('Failed to update status');
+            console.error(error);
+        }
+    };
+
+    const handleMakeMember = async (customerId: string) => {
+        try {
+            await convertCustomerToMember(customerId);
+            toast.success('Customer converted to member successfully!');
+            loadCustomers();
+        } catch (error) {
+            toast.error('Failed to convert to member');
+            console.error(error);
+        }
+    };
+
     // Calculate stats
     const stats = useMemo(() => {
         const total = customers.length;
@@ -144,14 +186,16 @@ const AdminCustomers = () => {
                     variant="success"
                 />
                 <StatCard
-                    title="Premium Members"
-                    value={stats.membershipCounts['12-month-premium'] || 0}
-                    icon={Users}
+                    title="Pending Approval"
+                    value={customers.filter(c => c.status === 'pending').length}
+                    icon={Clock}
+                    variant="warning"
                 />
                 <StatCard
-                    title="Trial Members"
-                    value={stats.membershipCounts['1-month-trial'] || 0}
-                    icon={Users}
+                    title="Active Members"
+                    value={customers.filter(c => c.status === 'member').length}
+                    icon={UserCheck}
+                    variant="success"
                 />
             </div>
 
@@ -188,11 +232,11 @@ const AdminCustomers = () => {
                                 <TableHead>Customer ID</TableHead>
                                 <TableHead>Full Name</TableHead>
                                 <TableHead>Phone</TableHead>
-                                <TableHead>Age</TableHead>
                                 <TableHead>Gender</TableHead>
                                 <TableHead>Membership</TableHead>
-                                <TableHead>Start Date</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Registered</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -208,7 +252,6 @@ const AdminCustomers = () => {
                                         </div>
                                     </TableCell>
                                     <TableCell>{customer.phone}</TableCell>
-                                    <TableCell>{customer.age}</TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className={getGenderBadgeColor(customer.gender)}>
                                             {customer.gender}
@@ -220,10 +263,44 @@ const AdminCustomers = () => {
                                         </span>
                                     </TableCell>
                                     <TableCell>
-                                        {format(new Date(customer.startDate), 'MMM dd, yyyy')}
+                                        <Badge variant="outline" className={getStatusBadgeColor(customer.status || 'pending')}>
+                                            {customer.status === 'member' ? '✓ Member' : customer.status === 'approved' ? '✓ Approved' : '⏳ Pending'}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
-                                        {format(new Date(customer.createdAt), 'MMM dd, yyyy HH:mm')}
+                                        {format(new Date(customer.createdAt), 'MMM dd, yyyy')}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {customer.status !== 'approved' && customer.status !== 'member' && (
+                                                    <DropdownMenuItem onClick={() => handleStatusChange(customer.id, 'approved')}>
+                                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                                        Approve
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {customer.status !== 'member' && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => handleMakeMember(customer.id)} className="text-primary">
+                                                            <UserCheck className="h-4 w-4 mr-2" />
+                                                            Make Member
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                {customer.status === 'member' && (
+                                                    <DropdownMenuItem disabled>
+                                                        <UserCheck className="h-4 w-4 mr-2" />
+                                                        Already a Member
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}

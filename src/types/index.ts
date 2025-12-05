@@ -10,7 +10,6 @@ export interface Member {
   status: 'active' | 'expired' | 'trial';
   paymentDue: number;
   address?: string;
-  emergencyContact?: string;
   measurements: Measurement[];
   assignedDietPlan?: string;
   assignedWorkout?: string;
@@ -165,6 +164,7 @@ export interface Exercise {
   reps: string;
   rest: string;
   notes?: string;
+  animation_url?: string | null;
 }
 
 export interface Trainer {

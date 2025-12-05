@@ -10,9 +10,10 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { MiniExerciseSimulation } from './ExerciseSimulation';
+import { ExerciseAnimationPlayer } from '@/components/animations/ExerciseAnimationPlayer';
 import { Workout, Exercise } from '@/types';
 import { trainers } from '@/data/mockData';
-import { exerciseCatalog } from '@/data/exerciseCatalog';
+import { useExerciseCatalog } from '@/hooks/useExerciseCatalog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,6 +106,9 @@ export const EditWorkoutDialog = ({
   const [activeTab, setActiveTab] = useState('basic');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Fetch exercises from database
+  const { data: exerciseCatalog = [] } = useExerciseCatalog();
+
   // Form state
   const [name, setName] = useState('');
   const [bodyPart, setBodyPart] = useState<BodyPart>('chest');
@@ -156,7 +160,12 @@ export const EditWorkoutDialog = ({
   );
 
   const handleAddExercise = (exerciseName: string) => {
-    setExercises([...exercises, { ...emptyExercise, name: exerciseName }]);
+    const catalogExercise = exerciseCatalog.find(ex => ex.name === exerciseName);
+    setExercises([...exercises, {
+      ...emptyExercise,
+      name: exerciseName,
+      animation_url: catalogExercise?.animation_url || null,
+    }]);
     setExerciseSearch('');
   };
 
@@ -450,7 +459,10 @@ export const EditWorkoutDialog = ({
                                 onClick={() => handleAddExercise(ex.name)}
                               >
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <MiniExerciseSimulation exerciseName={ex.name} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                                  <ExerciseAnimationPlayer
+                                    animationUrl={ex.animation_url}
+                                    className="h-10 w-10 opacity-60 group-hover:opacity-100 transition-opacity"
+                                  />
                                   <span className="truncate">{ex.name}</span>
                                 </div>
                                 <Badge variant="outline" className="ml-auto text-xs capitalize flex-shrink-0">
@@ -498,10 +510,10 @@ export const EditWorkoutDialog = ({
                               onDragEnd={handleDragEnd}
                             >
                               <div className="flex items-start gap-3">
-                                {/* Exercise Simulation */}
-                                <MiniExerciseSimulation
-                                  exerciseName={exercise.name}
-                                  className="mt-6"
+                                {/* Exercise Animation from Database */}
+                                <ExerciseAnimationPlayer
+                                  animationUrl={exercise.animation_url}
+                                  className="h-16 w-16 mt-6"
                                 />
 
                                 <div className="flex flex-col gap-1 cursor-grab active:cursor-grabbing">

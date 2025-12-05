@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 // Form validation schema
 const customerSchema = z.object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
     phone: z.string().regex(/^[+]?[\d\s-()]+$/, 'Invalid phone number'),
     age: z.string().refine((val) => {
         const num = parseInt(val);
@@ -29,15 +30,19 @@ const customerSchema = z.object({
     }, 'Age must be between 10 and 100'),
     gender: z.enum(['male', 'female', 'other']),
     address: z.string().min(5, 'Address must be at least 5 characters'),
-    emergencyContact: z.string().regex(/^[+]?[\d\s-()]+$/, 'Invalid phone number'),
     membershipType: z.enum(['1-month-trial', '3-month-basic', '6-month-standard', '12-month-premium']),
     startDate: z.string().min(1, 'Start date is required'),
+    gymId: z.string().optional(),
 });
 
 const NewCustomer = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submittedCustomerId, setSubmittedCustomerId] = useState<string | null>(null);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // Get gymId from URL parameters
+    const gymId = searchParams.get('gymId');
 
     const {
         register,
@@ -49,13 +54,26 @@ const NewCustomer = () => {
         resolver: zodResolver(customerSchema),
         defaultValues: {
             startDate: new Date().toISOString().split('T')[0],
+            gymId: gymId || undefined,
         },
     });
+
+    // Update gymId when URL param changes
+    useEffect(() => {
+        if (gymId) {
+            setValue('gymId', gymId);
+        }
+    }, [gymId, setValue]);
 
     const onSubmit = async (data: CustomerFormData) => {
         setIsSubmitting(true);
         try {
-            const customer = await saveCustomer(data);
+            // Include gymId in the submission
+            const customerData = {
+                ...data,
+                gymId: gymId || undefined,
+            };
+            const customer = await saveCustomer(customerData);
             setSubmittedCustomerId(customer.customerId);
             toast.success('Registration successful!');
         } catch (error) {
@@ -203,16 +221,17 @@ const NewCustomer = () => {
                                 )}
                             </div>
 
-                            {/* Emergency Contact */}
+                            {/* Email */}
                             <div className="space-y-2">
-                                <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                                <Label htmlFor="email">Email</Label>
                                 <Input
-                                    id="emergencyContact"
-                                    placeholder="+91-9876543211"
-                                    {...register('emergencyContact')}
+                                    id="email"
+                                    type="email"
+                                    placeholder="john@example.com"
+                                    {...register('email')}
                                 />
-                                {errors.emergencyContact && (
-                                    <p className="text-sm text-destructive">{errors.emergencyContact.message}</p>
+                                {errors.email && (
+                                    <p className="text-sm text-destructive">{errors.email.message}</p>
                                 )}
                             </div>
 

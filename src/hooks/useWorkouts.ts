@@ -29,6 +29,7 @@ export interface WorkoutExercise {
   rest: string;
   notes: string | null;
   order_index: number;
+  animation_url: string | null;
 }
 
 export const useWorkouts = () => {

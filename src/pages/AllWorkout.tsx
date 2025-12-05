@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -22,7 +22,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
-import { workouts as initialWorkouts, trainers, members, getStats } from '@/data/mockData';
+import { trainers, members, getStats } from '@/data/mockData';
+import { useWorkouts, Workout as DbWorkout } from '@/hooks/useWorkouts';
 import { Workout } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,6 +75,7 @@ import { WorkoutPagination } from '@/components/workout/WorkoutPagination';
 import { WorkoutGridSkeleton } from '@/components/workout/WorkoutCardSkeleton';
 import { EmptyWorkoutState } from '@/components/workout/EmptyWorkoutState';
 import { MiniExerciseSimulation } from '@/components/workout/ExerciseSimulation';
+import { ExerciseAnimationPlayer } from '@/components/animations/ExerciseAnimationPlayer';
 
 const bodyPartColors: Record<string, string> = {
   'chest': 'hsl(0, 84%, 60%)',
@@ -127,8 +129,45 @@ const AllWorkout = () => {
   const navigate = useNavigate();
   const stats = getStats();
 
-  // State management
-  const [workouts, setWorkouts] = useState<Workout[]>(initialWorkouts);
+  // Fetch workouts from database
+  const { data: dbWorkouts = [], isLoading: isLoadingDb } = useWorkouts();
+
+  // Map database workouts to frontend format
+  const mapDbToFrontend = (db: DbWorkout): Workout => ({
+    id: db.id,
+    name: db.name,
+    trainer: db.trainer?.name || 'Unknown',
+    trainerId: db.trainer_id || '',
+    bodyPart: db.body_part,
+    difficulty: db.difficulty,
+    equipment: db.equipment,
+    duration: db.duration,
+    exercises: (db.exercises || []).map(ex => ({
+      name: ex.name,
+      sets: ex.sets,
+      reps: ex.reps,
+      rest: ex.rest,
+      notes: ex.notes || '',
+      animation_url: ex.animation_url || null,
+    })),
+    members: [],
+    usageCount: db.usage_count || 0,
+    thumbnail: db.thumbnail || 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=300&fit=crop',
+    videoUrl: db.video_url || undefined,
+  });
+
+  // Convert database workouts to frontend format
+  const mappedWorkouts = useMemo(() => dbWorkouts.map(mapDbToFrontend), [dbWorkouts]);
+
+  // State management - initialized empty, updated by database
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+
+  // Sync database workouts to state
+  useEffect(() => {
+    if (mappedWorkouts.length > 0) {
+      setWorkouts(mappedWorkouts);
+    }
+  }, [mappedWorkouts]);
   const [searchQuery, setSearchQuery] = useState('');
   const [bodyPartFilter, setBodyPartFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
@@ -204,7 +243,9 @@ const AllWorkout = () => {
     setCurrentPage(1);
   }, []);
 
-  const mostUsedWorkout = workouts.reduce((prev, curr) => prev.usageCount > curr.usageCount ? prev : curr);
+  const mostUsedWorkout = workouts.length > 0
+    ? workouts.reduce((prev, curr) => prev.usageCount > curr.usageCount ? prev : curr)
+    : null;
 
   const equipmentDistribution = [
     { name: 'Free Weights', value: workouts.filter(w => w.equipment === 'free-weights').length },
@@ -431,14 +472,14 @@ const AllWorkout = () => {
         />
         <StatCard
           title="Most Used"
-          value={mostUsedWorkout.name.split(' ').slice(0, 2).join(' ')}
-          subtitle={`${mostUsedWorkout.usageCount} uses`}
+          value={mostUsedWorkout?.name?.split(' ').slice(0, 2).join(' ') || 'N/A'}
+          subtitle={mostUsedWorkout ? `${mostUsedWorkout.usageCount} uses` : 'No data'}
           icon={Zap}
           variant="success"
         />
         <StatCard
           title="Avg Duration"
-          value={`${Math.round(workouts.reduce((acc, w) => acc + w.duration, 0) / workouts.length)} min`}
+          value={workouts.length > 0 ? `${Math.round(workouts.reduce((acc, w) => acc + w.duration, 0) / workouts.length)} min` : 'N/A'}
           icon={Clock}
         />
         <Card className="p-4">
@@ -657,8 +698,11 @@ const AllWorkout = () => {
                   {viewingWorkout.exercises.map((exercise, idx) => (
                     <div key={idx} className="p-4 bg-muted/50 rounded-lg flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        {/* Exercise Simulation GIF */}
-                        <MiniExerciseSimulation exerciseName={exercise.name} />
+                        {/* Exercise Animation from Database */}
+                        <ExerciseAnimationPlayer
+                          animationUrl={exercise.animation_url}
+                          className="h-16 w-16"
+                        />
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                           {idx + 1}
                         </div>

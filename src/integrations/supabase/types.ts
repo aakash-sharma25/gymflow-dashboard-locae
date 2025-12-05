@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          id: string
+          customer_id: string
+          full_name: string
+          email: string
+          phone: string
+          age: number
+          gender: string
+          address: string
+          membership_type: string
+          start_date: string
+          created_at: string
+          updated_at: string
+          status: 'pending' | 'approved' | 'member'
+          gym_id: string | null
+        }
+        Insert: {
+          id?: string
+          customer_id?: string
+          full_name: string
+          email: string
+          phone: string
+          age: number
+          gender: string
+          address: string
+          membership_type: string
+          start_date: string
+          created_at?: string
+          updated_at?: string
+          status?: 'pending' | 'approved' | 'member'
+          gym_id?: string | null
+        }
+        Update: {
+          id?: string
+          customer_id?: string
+          full_name?: string
+          email?: string
+          phone?: string
+          age?: number
+          gender?: string
+          address?: string
+          membership_type?: string
+          start_date?: string
+          created_at?: string
+          updated_at?: string
+          status?: 'pending' | 'approved' | 'member'
+          gym_id?: string | null
+        }
+        Relationships: []
+      }
       diet_assignments: {
         Row: {
           created_at: string
@@ -99,6 +150,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gym_branding: {
+        Row: {
+          id: string
+          user_id: string
+          gym_name: string
+          logo_url: string | null
+          primary_color: string
+          secondary_color: string
+          address: string | null
+          contact_number: string | null
+          website_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          gym_name?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          address?: string | null
+          contact_number?: string | null
+          website_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          gym_name?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          address?: string | null
+          contact_number?: string | null
+          website_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       diet_plans: {
         Row: {
@@ -291,12 +384,53 @@ export type Database = {
           },
         ]
       }
+      member_task_steps: {
+        Row: {
+          id: string
+          member_id: string
+          step_count: number
+          assigned_by_admin_id: string | null
+          assigned_at: string
+          status: Database["public"]["Enums"]["task_step_status"]
+          notes: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          step_count: number
+          assigned_by_admin_id?: string | null
+          assigned_at?: string
+          status?: Database["public"]["Enums"]["task_step_status"]
+          notes?: string | null
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          member_id?: string
+          step_count?: number
+          assigned_by_admin_id?: string | null
+          assigned_at?: string
+          status?: Database["public"]["Enums"]["task_step_status"]
+          notes?: string | null
+          completed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_task_steps_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+
       members: {
         Row: {
           address: string | null
           created_at: string
           email: string
-          emergency_contact: string | null
           expiry_date: string
           id: string
           name: string
@@ -312,7 +446,6 @@ export type Database = {
           address?: string | null
           created_at?: string
           email: string
-          emergency_contact?: string | null
           expiry_date: string
           id?: string
           name: string
@@ -328,7 +461,6 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string
-          emergency_contact?: string | null
           expiry_date?: string
           id?: string
           name?: string
@@ -464,6 +596,7 @@ export type Database = {
           rest: string
           sets: number
           workout_id: string
+          animation_url: string | null
         }
         Insert: {
           created_at?: string
@@ -475,6 +608,7 @@ export type Database = {
           rest: string
           sets: number
           workout_id: string
+          animation_url?: string | null
         }
         Update: {
           created_at?: string
@@ -486,6 +620,7 @@ export type Database = {
           rest?: string
           sets?: number
           workout_id?: string
+          animation_url?: string | null
         }
         Relationships: [
           {
@@ -567,33 +702,34 @@ export type Database = {
       app_role: "admin" | "trainer"
       assignment_status: "active" | "completed" | "cancelled"
       body_part:
-        | "chest"
-        | "back"
-        | "legs"
-        | "arms"
-        | "shoulders"
-        | "core"
-        | "full-body"
+      | "chest"
+      | "back"
+      | "legs"
+      | "arms"
+      | "shoulders"
+      | "core"
+      | "full-body"
       diet_category: "weight-loss" | "muscle-gain" | "maintenance" | "general"
       diet_goal:
-        | "weight-loss"
-        | "muscle-gain"
-        | "maintenance"
-        | "fat-loss"
-        | "general-fitness"
+      | "weight-loss"
+      | "muscle-gain"
+      | "maintenance"
+      | "fat-loss"
+      | "general-fitness"
       diet_type:
-        | "vegetarian"
-        | "non-vegetarian"
-        | "vegan"
-        | "keto"
-        | "diabetic"
-        | "gluten-free"
+      | "vegetarian"
+      | "non-vegetarian"
+      | "vegan"
+      | "keto"
+      | "diabetic"
+      | "gluten-free"
       difficulty_level: "beginner" | "intermediate" | "advanced"
       equipment_type: "free-weights" | "machines" | "bodyweight" | "mixed"
       meal_time: "Breakfast" | "Lunch" | "Dinner" | "Snacks"
       member_status: "active" | "expired" | "trial"
       payment_status: "paid" | "pending" | "failed"
       payment_type: "membership" | "pt" | "product"
+      task_step_status: "pending" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -607,116 +743,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {

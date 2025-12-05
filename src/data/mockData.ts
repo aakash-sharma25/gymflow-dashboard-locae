@@ -20,7 +20,6 @@ export const members: Member[] = [
     status: 'active',
     paymentDue: 0,
     address: '123 Main St, Mumbai',
-    emergencyContact: '+91-9876543211',
     measurements: [
       { date: '2025-01-15', weight: 80, height: 175, bmi: 26.1 },
       { date: '2025-02-15', weight: 78, height: 175, bmi: 25.5 },

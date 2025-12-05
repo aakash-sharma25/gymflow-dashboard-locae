@@ -1,14 +1,72 @@
-import { Users, UserCheck, UserX, DollarSign, Apple, Dumbbell, TrendingUp, Clock } from 'lucide-react';
+import { Users, UserCheck, UserX, DollarSign, Apple, Dumbbell, TrendingUp, Clock, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
-import { getStats, members, dietPlans, workouts } from '@/data/mockData';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { useMembers } from '@/hooks/useMembers';
+import { useWorkouts } from '@/hooks/useWorkouts';
+import { useDietPlans } from '@/hooks/useDietPlans';
 
 const Dashboard = () => {
-  const stats = getStats();
+  // Fetch data from database
+  const { data: dbMembers = [], isLoading: isLoadingMembers } = useMembers();
+  const { data: dbWorkouts = [], isLoading: isLoadingWorkouts } = useWorkouts();
+  const { data: dbDietPlans = [], isLoading: isLoadingDietPlans } = useDietPlans();
+
+  const isLoading = isLoadingMembers || isLoadingWorkouts || isLoadingDietPlans;
+
+  // Map members to UI format
+  const members = dbMembers.map(m => ({
+    id: m.id,
+    name: m.name,
+    phone: m.phone,
+    email: m.email,
+    photo: m.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
+    plan: m.plan,
+    startDate: m.start_date,
+    expiryDate: m.expiry_date,
+    status: m.status,
+    paymentDue: m.payment_due,
+  }));
+
+  // Map workouts to UI format
+  const workouts = dbWorkouts.map(w => ({
+    id: w.id,
+    name: w.name,
+    trainer: w.trainer?.name || 'Unknown',
+    trainerId: w.trainer_id || '',
+    bodyPart: w.body_part,
+    difficulty: w.difficulty,
+    equipment: w.equipment,
+    duration: w.duration,
+    usageCount: w.usage_count,
+    thumbnail: w.thumbnail,
+  }));
+
+  // Map diet plans
+  const dietPlans = dbDietPlans.map(d => ({
+    id: d.id,
+    name: d.name,
+    category: d.category,
+    members: [], // Diet assignments would need a separate query
+  }));
+
+  // Calculate stats from database data
+  const stats = {
+    totalMembers: members.length,
+    activeMembers: members.filter(m => m.status === 'active').length,
+    expiredMembers: members.filter(m => m.status === 'expired').length,
+    trialMembers: members.filter(m => m.status === 'trial').length,
+    totalRevenue: members.reduce((acc, m) => acc + (m.paymentDue || 0), 0), // This would need a payments query
+    totalDietPlans: dietPlans.length,
+    assignedDietPlans: dietPlans.filter(d => d.members.length > 0).length,
+    totalWorkouts: workouts.length,
+    avgWorkoutDuration: workouts.length > 0
+      ? Math.round(workouts.reduce((acc, w) => acc + w.duration, 0) / workouts.length)
+      : 0,
+  };
 
   const memberStatusData = [
     { name: 'Active', value: stats.activeMembers, color: 'hsl(142, 76%, 36%)' },
@@ -25,6 +83,14 @@ const Dashboard = () => {
     }));
 
   const recentMembers = members.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -45,7 +111,7 @@ const Dashboard = () => {
         <StatCard
           title="Active Members"
           value={stats.activeMembers}
-          subtitle={`${Math.round((stats.activeMembers / stats.totalMembers) * 100)}% of total`}
+          subtitle={stats.totalMembers > 0 ? `${Math.round((stats.activeMembers / stats.totalMembers) * 100)}% of total` : '0%'}
           icon={UserCheck}
           variant="success"
         />
@@ -123,20 +189,26 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={workoutPopularityData} layout="vertical">
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Bar dataKey="count" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {workoutPopularityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={workoutPopularityData} layout="vertical">
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Bar dataKey="count" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No workout data available
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -176,26 +248,32 @@ const Dashboard = () => {
           <CardDescription>Latest member activity</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentMembers.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={member.photo} alt={member.name} />
-                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">{member.plan}</p>
+          {recentMembers.length > 0 ? (
+            <div className="space-y-4">
+              {recentMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={member.photo} alt={member.name} />
+                      <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.plan}</p>
+                    </div>
                   </div>
+                  <StatusBadge status={member.status} />
                 </div>
-                <StatusBadge status={member.status} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No members found. Add members to see them here.
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

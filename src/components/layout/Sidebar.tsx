@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranding } from '@/contexts/BrandingContext';
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +19,7 @@ import {
   Menu,
   QrCode,
   UserPlus,
+  Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
@@ -44,6 +46,7 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { branding } = useBranding();
 
   const handleLogout = async () => {
     await signOut();
@@ -93,11 +96,22 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       {/* Logo */}
       <div className={cn('flex items-center h-16 border-b border-sidebar-border px-4', collapsed && 'justify-center')}>
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+          {branding.logo_url ? (
+            <img
+              src={branding.logo_url}
+              alt={branding.gym_name}
+              className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={cn("h-9 w-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0", branding.logo_url && "hidden")}>
             <Dumbbell className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-bold text-lg text-sidebar-foreground">GymERP</span>
+            <span className="font-bold text-lg text-sidebar-foreground truncate">{branding.gym_name}</span>
           )}
         </div>
       </div>
@@ -111,6 +125,17 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
 
       {/* Bottom Navigation */}
       <div className="p-3 space-y-1 border-t border-sidebar-border">
+        <NavLink
+          to="/settings/branding"
+          className={cn(
+            'sidebar-item',
+            location.pathname === '/settings/branding' && 'sidebar-item-active',
+            collapsed && 'justify-center px-2'
+          )}
+        >
+          <Palette className="h-5 w-5 flex-shrink-0" />
+          {!collapsed && <span className="truncate">Branding</span>}
+        </NavLink>
         <div
           className={cn(
             'sidebar-item opacity-50 cursor-not-allowed',
@@ -148,6 +173,7 @@ export const MobileSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { branding } = useBranding();
 
   const handleLogout = async () => {
     await signOut();
@@ -192,10 +218,21 @@ export const MobileSidebar = () => {
         {/* Logo */}
         <div className="flex items-center h-16 border-b border-sidebar-border px-4">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+            {branding.logo_url ? (
+              <img
+                src={branding.logo_url}
+                alt={branding.gym_name}
+                className="h-9 w-9 rounded-lg object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={cn("h-9 w-9 rounded-lg bg-primary flex items-center justify-center", branding.logo_url && "hidden")}>
               <Dumbbell className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg text-sidebar-foreground">GymERP</span>
+            <span className="font-bold text-lg text-sidebar-foreground">{branding.gym_name}</span>
           </div>
         </div>
 
@@ -208,6 +245,15 @@ export const MobileSidebar = () => {
 
         {/* Bottom Navigation */}
         <div className="p-3 space-y-1 border-t border-sidebar-border">
+          <SheetClose asChild>
+            <NavLink
+              to="/settings/branding"
+              className={cn('sidebar-item', location.pathname === '/settings/branding' && 'sidebar-item-active')}
+            >
+              <Palette className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">Branding</span>
+            </NavLink>
+          </SheetClose>
           <div className="sidebar-item opacity-50 cursor-not-allowed">
             <Settings className="h-5 w-5 flex-shrink-0" />
             <span className="truncate">Settings</span>

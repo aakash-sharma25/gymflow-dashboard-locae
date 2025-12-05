@@ -14,7 +14,6 @@ export interface Member {
   status: 'active' | 'expired' | 'trial';
   payment_due: number;
   address: string | null;
-  emergency_contact: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -167,6 +166,127 @@ export const useDeleteMember = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
       toast({ title: 'Success', description: 'Member deleted successfully' });
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    },
+  });
+};
+
+// Payment Management Hooks
+
+export const useMemberPayments = (memberId: string) => {
+  return useQuery({
+    queryKey: ['member-payments', memberId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('member_payments')
+        .select('*')
+        .eq('member_id', memberId)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      return data as MemberPayment[];
+    },
+    enabled: !!memberId,
+  });
+};
+
+export const useAddPayment = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (payment: Omit<MemberPayment, 'id'>) => {
+      const { data, error } = await supabase
+        .from('member_payments')
+        .insert(payment)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['member-payments', variables.member_id] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast({ title: 'Success', description: 'Payment recorded successfully' });
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    },
+  });
+};
+
+export const useUpdatePayment = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<MemberPayment> & { id: string; member_id: string }) => {
+      const { data, error } = await supabase
+        .from('member_payments')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['member-payments', variables.member_id] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast({ title: 'Success', description: 'Payment updated successfully' });
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    },
+  });
+};
+
+export const useDeletePayment = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, member_id }: { id: string; member_id: string }) => {
+      const { error } = await supabase
+        .from('member_payments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return member_id;
+    },
+    onSuccess: (member_id) => {
+      queryClient.invalidateQueries({ queryKey: ['member-payments', member_id] });
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast({ title: 'Success', description: 'Payment deleted successfully' });
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    },
+  });
+};
+
+// Update member's payment_due
+export const useUpdatePaymentDue = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, payment_due }: { id: string; payment_due: number }) => {
+      const { error } = await supabase
+        .from('members')
+        .update({ payment_due })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      toast({ title: 'Success', description: 'Payment due updated' });
     },
     onError: (error) => {
       toast({ variant: 'destructive', title: 'Error', description: error.message });

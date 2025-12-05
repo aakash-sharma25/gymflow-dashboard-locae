@@ -3,8 +3,13 @@ import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, Send, RefreshC
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { members, getStats, dietPlans, workouts } from '@/data/mockData';
-import { Member, DietPlan, Workout } from '@/types';
+import { useMembers, Member as DbMember } from '@/hooks/useMembers';
+import { useDietPlans, DietPlan as DbDietPlan } from '@/hooks/useDietPlans';
+import { useWorkouts, Workout as DbWorkout } from '@/hooks/useWorkouts';
+import { DietPlan, Workout } from '@/types';
+import { PaymentHistoryTab } from '@/components/members/PaymentHistoryTab';
+import { TaskStepsAssignment } from '@/components/members/TaskStepsAssignment';
+import { TaskStepsSummary } from '@/components/members/TaskStepsSummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -50,13 +55,95 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 const Membership = () => {
-  const stats = getStats();
+  // Fetch data from database
+  const { data: dbMembers = [], isLoading } = useMembers();
+  const { data: dbDietPlans = [] } = useDietPlans();
+  const { data: dbWorkouts = [] } = useWorkouts();
+
+  // Map database diet plans to UI format
+  const dietPlans = dbDietPlans.map(d => ({
+    id: d.id,
+    name: d.name,
+    trainer: d.trainer?.name || 'Unknown',
+    trainerId: d.trainer_id || '',
+    category: d.category,
+    dietGoal: d.diet_goal,
+    dietType: d.diet_type,
+    duration: d.duration,
+    targetCalories: d.target_calories,
+    members: [] as string[],
+    thumbnail: d.thumbnail || '',
+    createdAt: d.created_at,
+    meals: (d.meals || []).map(m => ({
+      time: m.meal_time,
+      items: m.items || [],
+    })),
+    macros: {
+      calories: d.macros_calories || d.target_calories,
+      protein: d.macros_protein,
+      carbs: d.macros_carbs,
+      fat: d.macros_fat,
+    },
+  })) as DietPlan[];
+
+  // Map database workouts to UI format
+  const workouts = dbWorkouts.map(w => ({
+    id: w.id,
+    name: w.name,
+    trainer: w.trainer?.name || 'Unknown',
+    trainerId: w.trainer_id || '',
+    bodyPart: w.body_part,
+    difficulty: w.difficulty,
+    equipment: w.equipment,
+    duration: w.duration,
+    thumbnail: w.thumbnail || '',
+    videoUrl: w.video_url || '',
+    usageCount: w.usage_count,
+    members: [] as string[],
+    exercises: (w.exercises || []).map(e => ({
+      name: e.name,
+      sets: e.sets,
+      reps: e.reps,
+      rest: e.rest,
+      notes: e.notes || undefined,
+    })),
+  })) as Workout[];
+
+  // Map database fields to UI format
+  const members = dbMembers.map(m => ({
+    id: m.id,
+    name: m.name,
+    phone: m.phone,
+    email: m.email,
+    photo: m.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
+    plan: m.plan,
+    startDate: m.start_date,
+    expiryDate: m.expiry_date,
+    status: m.status,
+    paymentDue: m.payment_due,
+    address: m.address,
+    measurements: [],
+    attendance: [],
+    paymentHistory: [],
+    assignedDietPlan: undefined as string | undefined,
+    assignedWorkout: undefined as string | undefined,
+  }));
+
+  // Calculate stats from database members
+  const stats = {
+    totalMembers: members.length,
+    activeMembers: members.filter(m => m.status === 'active').length,
+    expiredMembers: members.filter(m => m.status === 'expired').length,
+    trialMembers: members.filter(m => m.status === 'trial').length,
+    totalRevenue: 50000, // This should come from payments later
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [viewingMember, setViewingMember] = useState<Member | null>(null);
+  const [viewingMember, setViewingMember] = useState<typeof members[0] | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [viewingDietPlan, setViewingDietPlan] = useState<DietPlan | null>(null);
   const [viewingWorkout, setViewingWorkout] = useState<Workout | null>(null);
@@ -163,10 +250,6 @@ const Membership = () => {
                   <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
                     <Input id="address" placeholder="123 Main St, City" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="emergency">Emergency Contact</Label>
-                    <Input id="emergency" placeholder="+91-9876543211" />
                   </div>
                 </div>
                 <DialogFooter>
@@ -467,6 +550,9 @@ const Membership = () => {
                         </Card>
                       </div>
 
+                      {/* Pending Task Steps */}
+                      <TaskStepsSummary memberId={viewingMember.id} />
+
                       {viewingMember.measurements.length > 0 && (
                         <div>
                           <h4 className="font-semibold mb-3">Latest Measurements</h4>
@@ -506,10 +592,6 @@ const Membership = () => {
                             <div className="flex justify-between py-2 border-b border-border/50">
                               <span className="text-muted-foreground">Address</span>
                               <span className="text-right max-w-[200px]">{viewingMember.address || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-border/50">
-                              <span className="text-muted-foreground">Emergency</span>
-                              <span>{viewingMember.emergencyContact || 'N/A'}</span>
                             </div>
                           </div>
                         </div>
@@ -598,47 +680,11 @@ const Membership = () => {
                     </TabsContent>
 
                     {/* Payments Tab */}
-                    <TabsContent value="payments" className="mt-0 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">Transaction History</h4>
-                        <Button size="sm" variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download Invoice
-                        </Button>
-                      </div>
-
-                      {viewingMember.paymentHistory && viewingMember.paymentHistory.length > 0 ? (
-                        <div className="border border-border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {viewingMember.paymentHistory.map((payment) => (
-                                <TableRow key={payment.id}>
-                                  <TableCell className="font-medium">
-                                    {format(new Date(payment.date), 'MMM dd, yyyy')}
-                                  </TableCell>
-                                  <TableCell>{payment.description}</TableCell>
-                                  <TableCell>₹{payment.amount}</TableCell>
-                                  <TableCell>
-                                    <StatusBadge status={payment.status === 'paid' ? 'active' : payment.status === 'pending' ? 'trial' : 'expired'} />
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No payment history found.
-                        </div>
-                      )}
+                    <TabsContent value="payments" className="mt-0">
+                      <PaymentHistoryTab
+                        memberId={viewingMember.id}
+                        memberName={viewingMember.name}
+                      />
                     </TabsContent>
 
                     {/* Settings Tab */}
@@ -663,6 +709,14 @@ const Membership = () => {
                           <Button variant="outline">Reset Password</Button>
                           <Button>Save Changes</Button>
                         </div>
+                      </div>
+
+                      {/* Task Steps Assignment Section */}
+                      <div className="pt-6 border-t border-border">
+                        <TaskStepsAssignment
+                          memberId={viewingMember.id}
+                          memberName={viewingMember.name}
+                        />
                       </div>
 
                       <div className="pt-6 border-t border-border">
