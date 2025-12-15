@@ -66,7 +66,7 @@ const Auth = () => {
       const { data, error } = await supabase.functions.invoke('manage-admin', {
         body: { action: 'grant-initial-admin' }
       });
-      
+
       if (error) {
         toast({
           variant: 'destructive',
@@ -133,7 +133,7 @@ const Auth = () => {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message === 'Invalid login credentials' 
+        description: error.message === 'Invalid login credentials'
           ? 'Invalid email or password. Please try again.'
           : error.message,
       });
@@ -191,55 +191,55 @@ const Auth = () => {
   };
 
   if (isLoading) {
-  // Show claim admin UI if user is logged in but no admin exists
-  if (user && adminExists === false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-              <Shield className="w-8 h-8 text-primary" />
+    // Show claim admin UI if user is logged in but no admin exists
+    if (user && adminExists === false) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+          <div className="w-full max-w-md animate-fade-in">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+                <Shield className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="text-3xl font-bold text-foreground">Become Admin</h1>
+              <p className="text-muted-foreground mt-2">No admin exists yet. You can become the first admin.</p>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Become Admin</h1>
-            <p className="text-muted-foreground mt-2">No admin exists yet. You can become the first admin.</p>
+
+            <Card className="border-border/50 shadow-xl">
+              <CardHeader>
+                <CardTitle>Claim Admin Access</CardTitle>
+                <CardDescription>
+                  As the first user, you can claim admin access to manage the gym.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Logged in as: <strong>{user.email}</strong>
+                </p>
+                <Button
+                  onClick={handleClaimAdmin}
+                  className="w-full"
+                  disabled={isClaimingAdmin}
+                >
+                  {isClaimingAdmin ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Claiming admin...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="mr-2 h-4 w-4" />
+                      Become Admin
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-
-          <Card className="border-border/50 shadow-xl">
-            <CardHeader>
-              <CardTitle>Claim Admin Access</CardTitle>
-              <CardDescription>
-                As the first user, you can claim admin access to manage the gym.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Logged in as: <strong>{user.email}</strong>
-              </p>
-              <Button 
-                onClick={handleClaimAdmin} 
-                className="w-full" 
-                disabled={isClaimingAdmin}
-              >
-                {isClaimingAdmin ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Claiming admin...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="mr-2 h-4 w-4" />
-                    Become Admin
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  return (
+    return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
@@ -398,6 +398,44 @@ const Auth = () => {
               </TabsContent>
             </CardContent>
           </Tabs>
+
+          <div className="mt-6 text-center">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/50" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setIsSubmitting(true);
+                const { error } = await signIn('uknows456@gmail.com', 'admin123');
+                setIsSubmitting(false);
+
+                if (error) {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Login Failed',
+                    description: error.message,
+                  });
+                } else {
+                  toast({
+                    title: 'Welcome back!',
+                    description: 'You have successfully logged in as demo user.',
+                  });
+                }
+              }}
+              className="mt-4 w-full"
+              disabled={isSubmitting}
+            >
+              <User className="mr-2 h-4 w-4" />
+              Demo Login
+            </Button>
+          </div>
         </Card>
       </div>
     </div>
