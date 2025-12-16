@@ -22,7 +22,7 @@ export const DEFAULT_BRANDING: GymBranding = {
     id: '',
     user_id: '',
     gym_name: 'Your Gym',
-    logo_url: null,
+    logo_url: '/logo.jpg',
     primary_color: '#3b82f6',
     secondary_color: '#1e40af',
     address: null,

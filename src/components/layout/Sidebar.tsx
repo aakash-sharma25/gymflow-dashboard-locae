@@ -107,9 +107,11 @@ export const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
               }}
             />
           ) : null}
-          <div className={cn("h-9 w-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0", branding.logo_url && "hidden")}>
-            <Dumbbell className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img
+            src="/logo.jpg"
+            alt="Gym Logo"
+            className={cn("h-9 w-9 rounded-lg object-cover flex-shrink-0", branding.logo_url && "hidden")}
+          />
           {!collapsed && (
             <span className="font-bold text-lg text-sidebar-foreground truncate">{branding.gym_name}</span>
           )}
@@ -229,9 +231,11 @@ export const MobileSidebar = () => {
                 }}
               />
             ) : null}
-            <div className={cn("h-9 w-9 rounded-lg bg-primary flex items-center justify-center", branding.logo_url && "hidden")}>
-              <Dumbbell className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img
+              src="/logo.jpg"
+              alt="Gym Logo"
+              className={cn("h-9 w-9 rounded-lg object-cover", branding.logo_url && "hidden")}
+            />
             <span className="font-bold text-lg text-sidebar-foreground">{branding.gym_name}</span>
           </div>
         </div>
